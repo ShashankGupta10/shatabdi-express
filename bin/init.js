@@ -56,10 +56,15 @@ inquirer.prompt(questions).then(answers => {
         fs.copySync(tsTemplatePath, projectPath);
     }
 
-    const ormPath = path.join(__dirname, `../templates/orm/${answers.orm.toLowerCase()}/models${answers.language === "TypeScript" ? "-ts" : ""}`);
-    fs.copySync(ormPath, projectPath);
+    if (answers.orm === "Mongoose") {
+        const ormPath = path.join(__dirname, `../templates/orm/${answers.orm.toLowerCase()}/models${answers.language === "TypeScript" ? "-ts" : ""}`);
+        fs.copySync(ormPath, projectPath);
+    }
+
     if (answers.orm === 'Prisma') {
-        const prismaSchemaPath = path.join(projectPath, 'prisma/schema.prisma');
+        const ormPath = path.join(__dirname, `../templates/orm/${answers.orm.toLowerCase()}`);
+        fs.copySync(ormPath, projectPath);
+        const prismaSchemaPath = path.join(projectPath, '/prisma/schema.prisma');
         const prismaSchemaContent = generatePrismaSchema(answers.database);
         fs.writeFileSync(prismaSchemaPath, prismaSchemaContent);
     }

@@ -25,7 +25,7 @@ const generatePackageJson = (projectName, language, orm) => {
         devDependencies["ts-node"] = "^10.0.0";
         devDependencies["ts-node-dev"] = "^1.1.8";
         if (orm === 'Prisma') {
-            devDependencies["prisma"] = "^3.0.0";
+            devDependencies["prisma"] = "5.13.0";
         }
         if (orm === "Mongoose") {
             devDependencies["@types/mongoose"] = "^0.0.0"
