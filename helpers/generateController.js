@@ -3,6 +3,7 @@ const generateUserController = (language, orm) => {
         if (orm === 'Prisma') {
             return `import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 
 const router = Router();
@@ -18,7 +19,11 @@ export const signup = async (req: Request, res: Response) => {
         });
         res.status(201).json({ message: 'User registered successfully' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        if (error instanceof Error) {
+            res.status(500).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'An unexpected error occurred' });
+        }
     }
 };
 
@@ -33,7 +38,11 @@ export const login = async (req: Request, res: Response) => {
         const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, { expiresIn: '1h' });
         res.json({ token });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        if (error instanceof Error) {
+            res.status(500).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'An unexpected error occurred' });
+        }
     }
 };
             `;
