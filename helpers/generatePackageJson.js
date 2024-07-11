@@ -13,7 +13,12 @@ const generatePackageJson = (projectName, language, orm) => {
     }
 
     const devDependencies = {
-        "nodemon": "^2.0.7"
+        "nodemon": "^2.0.7",
+        "husky": "^8.0.3",
+        "lint-staged": "^15.2.7",
+        "prettier": "3.3.2",
+        "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-prettier": "^5.1.3"
     };
 
     if (language === 'TypeScript') {
@@ -23,12 +28,11 @@ const generatePackageJson = (projectName, language, orm) => {
         devDependencies["@types/jsonwebtoken"] = "9.0.6";
         devDependencies["@types/node"] = "^14.14.31";
         devDependencies["ts-node"] = "^10.0.0";
-        devDependencies["ts-node-dev"] = "^1.1.8";
         if (orm === 'Prisma') {
             devDependencies["prisma"] = "5.13.0";
         }
         if (orm === "Mongoose") {
-            devDependencies["@types/mongoose"] = "^0.0.0"
+            devDependencies["@types/mongoose"] = "^1.0.0"
         }
     }
 
@@ -37,8 +41,11 @@ const generatePackageJson = (projectName, language, orm) => {
         version: "1.0.0",
         main: `app.${language === 'TypeScript' ? 'ts' : 'js'}`,
         scripts: {
-            start: "node app.js",
-            dev: "nodemon app.js"
+            'start': "node app.js",
+            'dev': "nodemon app.js",
+            'lint': "lint-staged",
+            'lint:check': "eslint . --ext .ts,.tsx --max-warnings 0",
+            "format": "prettier --write \"**/*.{ts,js,md}\"",
         },
         dependencies,
         devDependencies

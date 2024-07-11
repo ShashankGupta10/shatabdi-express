@@ -99,7 +99,17 @@ inquirer.prompt(questions).then(answers => {
         require('child_process').execSync('git init', { cwd: projectPath });
     }
 
-    // Update npm packages
+    require('child_process').execSync('npm install husky --save-dev', { cwd: projectPath });
+    require('child_process').execSync('npx husky init', { cwd: projectPath });
+    const huskyDir = path.join(projectPath, '.husky');
+    const preCommitPath = path.join(huskyDir, 'pre-commit');
+    fs.writeFileSync(preCommitPath, '#!/bin/sh\n. "$(dirname "$0")/_/husky.sh"\n\nnpm run lint\n', 'utf-8');
+    
+    // Make the pre-commit hook executable
+    fs.chmodSync(preCommitPath, '755');
+    // require('child_process').execSync('npx husky add .husky/pre-commit "npm run lint"', { cwd: projectPath });
+    console.log('Husky has been initialized and a pre-commit hook has been added.');
+
     require('child_process').execSync('npx npm-check-updates -u', { cwd: projectPath });
 
     console.log(chalk.greenBright(`Project ${answers.projectName} setup complete.`));
