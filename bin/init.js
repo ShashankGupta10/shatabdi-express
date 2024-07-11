@@ -3,11 +3,13 @@
 const inquirer = require('inquirer');
 const fs = require('fs-extra');
 const path = require('path');
-const chalk = require("chalk");
+const chalk = require('chalk');
 const { generatePrismaSchema } = require('./../helpers/generatePrisma');
 const { generateUserController } = require('./../helpers/generateController');
-const { generatePackageJson } = require('../helpers/generatePackageJson');
-const { generateApp } = require('../helpers/generateApp');
+const { generatePackageJson } = require('./../helpers/generatePackageJson');
+const { generateApp } = require('./../helpers/generateApp');
+const { generateAuthRouter } = require('./../helpers/generateAuthRouter');
+const { generateEnv } = require('./../helpers/generateEnv');
 
 const questions = [
     {
@@ -46,56 +48,69 @@ inquirer.prompt(questions).then(answers => {
     const projectPath = path.join(process.cwd(), answers.projectName);
     fs.mkdirSync(projectPath);
 
-    if (answers.language === "JavaScript") {
+    // Copy base template
+    if (answers.language === 'JavaScript') {
         const baseTemplatePath = path.join(__dirname, '../templates/base');
         fs.copySync(baseTemplatePath, projectPath);
-    }
-
-    if (answers.language === 'TypeScript') {
+    } else if (answers.language === 'TypeScript') {
         const tsTemplatePath = path.join(__dirname, '../templates/base-ts');
         fs.copySync(tsTemplatePath, projectPath);
     }
 
-    if (answers.orm === "Mongoose") {
-        const ormPath = path.join(__dirname, `../templates/orm/${answers.orm.toLowerCase()}/models${answers.language === "TypeScript" ? "-ts" : ""}`);
+    // Copy ORM specific template
+    if (answers.orm === 'Mongoose') {
+        const ormPath = path.join(__dirname, `../templates/orm/mongoose/models${answers.language === 'TypeScript' ? '-ts' : ''}`);
         fs.copySync(ormPath, projectPath);
-    }
-
-    if (answers.orm === 'Prisma') {
-        const ormPath = path.join(__dirname, `../templates/orm/${answers.orm.toLowerCase()}`);
+    } else if (answers.orm === 'Prisma') {
+        const ormPath = path.join(__dirname, '../templates/orm/prisma');
         fs.copySync(ormPath, projectPath);
         const prismaSchemaPath = path.join(projectPath, '/prisma/schema.prisma');
         const prismaSchemaContent = generatePrismaSchema(answers.database);
         fs.writeFileSync(prismaSchemaPath, prismaSchemaContent);
     }
 
-    const appPath = path.join(projectPath, `app${answers.language === "TypeScript" ? ".ts": ".js"}`)
-    const appContent = generateApp(answers.orm, answers.language)
-    fs.writeFileSync(appPath, appContent)
+    // Generate app file
+    const appPath = path.join(projectPath, `app${answers.language === 'TypeScript' ? '.ts' : '.js'}`);
+    const appContent = generateApp(answers.orm, answers.language);
+    fs.writeFileSync(appPath, appContent);
 
+    // Generate user controller
     const controllerPath = path.join(projectPath, `/controllers/user.controller.${answers.language === 'TypeScript' ? 'ts' : 'js'}`);
     const controllerContent = generateUserController(answers.language, answers.orm);
     fs.writeFileSync(controllerPath, controllerContent);
 
-    const packageJsonPath = path.join(projectPath, '/package.json');
-    const packageJson = generatePackageJson(answers.projectName, answers.language, answers.orm)
-    fs.writeFileSync(packageJsonPath, packageJson)
+    // Generate auth router
+    const authRouterPath = path.join(projectPath, `/routes/auth.${answers.language === 'TypeScript' ? 'ts' : 'js'}`);
+    const authRouterContent = generateAuthRouter(answers.language);
+    fs.writeFileSync(authRouterPath, authRouterContent);
 
+    // Generate package.json
+    const packageJsonPath = path.join(projectPath, '/package.json');
+    const packageJsonContent = generatePackageJson(answers.projectName, answers.language, answers.orm);
+    fs.writeFileSync(packageJsonPath, packageJsonContent);
+
+    // Generate .env file
+    const envPath = path.join(projectPath, '/.env');
+    const envContent = generateEnv();
+    fs.writeFileSync(envPath, envContent);
+
+    // Initialize git repository if requested
     if (answers.initGit) {
         require('child_process').execSync('git init', { cwd: projectPath });
     }
 
+    // Update npm packages
     require('child_process').execSync('npx npm-check-updates -u', { cwd: projectPath });
 
     console.log(chalk.greenBright(`Project ${answers.projectName} setup complete.`));
     console.log(chalk.greenBright(`Language: ${answers.language}`));
     console.log(chalk.greenBright(`ORM selected: ${answers.orm}`));
     console.log(chalk.greenBright(`Git repository initialized: ${answers.initGit}`));
-    if (answers.orm === "Prisma" && answers.database === "SQLite") {
-        console.log("Follow the following instructions:")
-        console.log(chalk.greenBright("RUN npm install"));
-        console.log(chalk.greenBright("RUN prisma generate"));
-        console.log(chalk.greenBright("ADD the database file path and JWT_SECRET in the .env file in the root directory"));
-        console.log(chalk.greenBright("RUN prisma migrate"));
+    if (answers.orm === 'Prisma' && answers.database === 'SQLite') {
+        console.log('Follow the following instructions:');
+        console.log(chalk.greenBright('RUN npm install'));
+        console.log(chalk.greenBright('ADD the database file path and JWT_SECRET in the .env file in the root directory'));
+        console.log(chalk.greenBright('RUN prisma migrate'));
+        console.log(chalk.greenBright('RUN prisma generate'));
     }
 });

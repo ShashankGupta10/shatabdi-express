@@ -46,8 +46,8 @@ const generatePackageJson = (projectName, language, orm) => {
 
     if (language === 'TypeScript') {
         packageJson.scripts.build = "tsc";
-        packageJson.scripts.start = "node dist/app.js";
-        packageJson.scripts.dev = "nodemon dist/app.js";
+        packageJson.scripts.start = "ts-node app.ts";
+        packageJson.scripts.dev = "tsc -b && nodemon dist/app.js";
     }
 
     return JSON.stringify(packageJson, null, 2);

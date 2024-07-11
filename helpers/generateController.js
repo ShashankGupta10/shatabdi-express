@@ -1,189 +1,67 @@
 const generateUserController = (language, orm) => {
-    if (language === 'TypeScript') {
-        if (orm === 'Prisma') {
-            return `import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+    const imports = language === 'TypeScript'
+        ? `import bcrypt from 'bcrypt';\nimport jwt from 'jsonwebtoken';\nimport { Request, Response } from 'express';\n${orm === 'Prisma' ? `import { PrismaClient } from '@prisma/client';` : `import User from './../models/User'; // Assuming you have a Mongoose User model`}\n`
+        : `const bcrypt = require('bcrypt');\nconst jwt = require('jsonwebtoken');\n\n${orm === 'Prisma' ? `const { PrismaClient } = require('@prisma/client');` : `const User = require('../models/User');`}\n`;
 
-const router = Router();
-const prisma = new PrismaClient();
-
-// Register a new user
-export const signup = async (req: Request, res: Response) => {
-    try {
-        const { email, password, name } = req.body;
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = await prisma.user.create({
-            data: { email, password: hashedPassword, name },
+    const prismaClient = orm === 'Prisma' ? 'const prisma = new PrismaClient();' : '';
+    const userCreate = orm === 'Prisma'
+        ? `const newUser = await prisma.user.create({
+          data: { email, password: hashedPassword, name },
+        });`
+        : `const newUser = new User({
+          email,
+          password: hashedPassword,
+          name,
         });
-        res.status(201).json({ message: 'User registered successfully' });
-    } catch (error) {
-        if (error instanceof Error) {
-            res.status(500).json({ error: error.message });
-        } else {
-            res.status(500).json({ error: 'An unexpected error occurred' });
-        }
-    }
-};
+        await newUser.save();`;
 
-// Login user
-export const login = async (req: Request, res: Response) => {
+    const userFind = orm === 'Prisma'
+        ? `const user = await prisma.user.findUnique({ where: { email } });`
+        : `const user = await User.findOne({ email });`;
+
+    const userId = orm === 'Prisma' ? 'user.id' : 'user._id';
+    return `${imports}
+  
+  ${prismaClient}
+  
+  // Register a new user
+  ${language === "TypeScript" ? "export " : ""}const signup = async (req${language === 'TypeScript' ? ': Request' : ''}, res${language === 'TypeScript' ? ': Response' : ''}) => {
     try {
-        const { email, password } = req.body;
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user || !await bcrypt.compare(password, user.password)) {
-            return res.status(401).json({ message: 'Invalid email or password' });
-        }
-        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, { expiresIn: '1h' });
-        res.json({ token });
+      const { email, password, name } = req.body;
+      const hashedPassword = await bcrypt.hash(password, 10);
+      ${userCreate}
+      res.status(201).json({ message: 'User registered successfully' });
     } catch (error) {
-        if (error instanceof Error) {
-            res.status(500).json({ error: error.message });
-        } else {
-            res.status(500).json({ error: 'An unexpected error occurred' });
-        }
-    }
-};
-            `;
-        } else if (orm === 'Mongoose') {
-            return `import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import { Router, Request, Response } from 'express';
-import User from '../models/User'; // Assuming you have a Mongoose User model
-
-const router = Router();
-
-// Register a new user
-export const signup = async (req: Request, res: Response) => {
-    try {
-        const { email, password, name } = req.body;
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = new User({
-            email,
-            password: hashedPassword,
-            name,
-        });
-        await newUser.save();
-        res.status(201).json({ message: 'User registered successfully' });
-    } catch (error) { 
-        if (error instanceof Error) {
-            res.status(500).json({ error: error.message });
-        } else {
-            res.status(500).json({ error: 'An unexpected error occurred' });
-        }
-    }
-};
-
-// Login user
-export const login = async (req: Request, res: Response) => {
-    try {
-        const { email, password } = req.body;
-        const user = await User.findOne({ email });
-        if (!user || !await bcrypt.compare(password, user.password)) {
-            return res.status(401).json({ message: 'Invalid email or password' });
-        }
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, { expiresIn: '1h' });
-        res.json({ token });
-    } catch (error) {
-        if (error instanceof Error) {
-            res.status(500).json({ error: error.message });
-        } else {
-            res.status(500).json({ error: 'An unexpected error occurred' });
-        }
-    }
-};
-            `;
-        }
-    } else {
-        if (orm === 'Prisma') {
-            return `const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
-
-// Register a new user
-const signup = async (req, res) => {
-    try {
-        const { email, password, name } = req.body;
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = await prisma.user.create({
-            data: { email, password: hashedPassword, name },
-        });
-        res.status(201).json({ message: 'User registered successfully' });
-    } catch (error) {
+      ${language === 'TypeScript' ? `if (error instanceof Error) {
         res.status(500).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'An unexpected error occurred' });
+      }` : `res.status(500).json({ error: error.message });`}
     }
-};
-
-// Login user
-const login = async (req, res) => {
+  };
+  
+  // Login user
+  ${language === "TypeScript" ? "export " : ""}const login = async (req${language === 'TypeScript' ? ': Request' : ''}, res${language === 'TypeScript' ? ': Response' : ''}) => {
     try {
-        const { email, password } = req.body;
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user || !await bcrypt.compare(password, user.password)) {
-            return res.status(401).json({ message: 'Invalid email or password' });
-        }
-        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.json({ token });
+      const { email, password } = req.body;
+      ${userFind}
+      if (!user || !await bcrypt.compare(password, user.password)) {
+        return res.status(401).json({ message: 'Invalid email or password' });
+      }
+      const token = jwt.sign({ id: ${userId} }, process.env.JWT_SECRET${language === 'TypeScript' ? '!' : ''}, { expiresIn: '1h' });
+      res.json({ token });
     } catch (error) {
+      ${language === 'TypeScript' ? `if (error instanceof Error) {
         res.status(500).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'An unexpected error occurred' });
+      }` : `res.status(500).json({ error: error.message });`}
     }
+  };
+  
+  ${language === 'JavaScript' ? `module.exports = { signup, login };` : ''}`;
 };
-
-module.exports = {
-    signup,
-    login
-};
-            `;
-        } else if (orm === 'Mongoose') {
-            return `const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-
-// Register a new user
-const signup = async (req, res) => {
-    try {
-        const { email, password, name } = req.body;
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = new User({
-            email,
-            password: hashedPassword,
-            name,
-        });
-        await newUser.save();
-        res.status(201).json({ message: 'User registered successfully' });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
-
-// Login user
-const login = async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        const user = await User.findOne({ email });
-        if (!user || !await bcrypt.compare(password, user.password)) {
-            return res.status(401).json({ message: 'Invalid email or password' });
-        }
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.json({ token });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
-
-module.exports = {
-    signup,
-    login
-};
-            `;
-        }
-    }
-    return '';
-}
 
 module.exports = {
     generateUserController
-}
+};

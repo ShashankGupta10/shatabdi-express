@@ -3,3 +3,4 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     const jwt_token = req.headers.authorization?.split(" ")[1]
     console.log(jwt_token);
 }
+
