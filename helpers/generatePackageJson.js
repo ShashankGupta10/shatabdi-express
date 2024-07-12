@@ -14,7 +14,7 @@ const generatePackageJson = (projectName, language, orm) => {
 
     const devDependencies = {
         "nodemon": "^2.0.7",
-        "husky": "^8.0.3",
+        "husky": "^9.0.11",
         "lint-staged": "^15.2.7",
         "prettier": "3.3.2",
         "eslint-config-prettier": "^9.1.0",
@@ -46,6 +46,12 @@ const generatePackageJson = (projectName, language, orm) => {
             'lint': "lint-staged",
             'lint:check': "eslint . --ext .ts,.tsx --max-warnings 0",
             "format": "prettier --write \"**/*.{ts,js,md}\"",
+        },
+        "lint-staged": {
+            "*.{ts,js}": [
+                "eslint --fix",
+                "prettier --write"
+            ]
         },
         dependencies,
         devDependencies

@@ -94,23 +94,14 @@ inquirer.prompt(questions).then(answers => {
     const envContent = generateEnv();
     fs.writeFileSync(envPath, envContent);
 
+    require('child_process').execSync('npx npm-check-updates -u', { cwd: projectPath });
     // Initialize git repository if requested
-    if (answers.initGit) {
-        require('child_process').execSync('git init', { cwd: projectPath });
-    }
+    require('child_process').execSync('git init', { cwd: projectPath });
 
     require('child_process').execSync('npm install husky --save-dev', { cwd: projectPath });
     require('child_process').execSync('npx husky init', { cwd: projectPath });
-    const huskyDir = path.join(projectPath, '.husky');
-    const preCommitPath = path.join(huskyDir, 'pre-commit');
-    fs.writeFileSync(preCommitPath, '#!/bin/sh\n. "$(dirname "$0")/_/husky.sh"\n\nnpm run lint\n', 'utf-8');
-    
-    // Make the pre-commit hook executable
-    fs.chmodSync(preCommitPath, '755');
-    // require('child_process').execSync('npx husky add .husky/pre-commit "npm run lint"', { cwd: projectPath });
-    console.log('Husky has been initialized and a pre-commit hook has been added.');
-
-    require('child_process').execSync('npx npm-check-updates -u', { cwd: projectPath });
+    require('child_process').execSync("echo npm run lint > .husky/pre-commit", { cwd: projectPath });
+    require('child_process').execSync('npx eslint --init --yes', { cwd: projectPath });
 
     console.log(chalk.greenBright(`Project ${answers.projectName} setup complete.`));
     console.log(chalk.greenBright(`Language: ${answers.language}`));
@@ -122,5 +113,6 @@ inquirer.prompt(questions).then(answers => {
         console.log(chalk.greenBright('ADD the database file path and JWT_SECRET in the .env file in the root directory'));
         console.log(chalk.greenBright('RUN prisma migrate'));
         console.log(chalk.greenBright('RUN prisma generate'));
+        console.log(chalk.greenBright('RUN "npx eslint --init" to initialize ESLint with the desired configuration'));
     }
 });
